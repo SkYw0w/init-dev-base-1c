@@ -4,7 +4,7 @@
   "description": "Создание информационной базы 1С из текущего Git проекта",
   "version": "0.0.1",
   "engines": {
-    "vscode": "^1.104.0"
+    "vscode": "^1.70.0"
   },
   "categories": [
     "Other"
@@ -12,10 +12,61 @@
   "activationEvents": [],
   "main": "./out/extension.js",
   "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "initDevBase1c",
+          "title": "Init Dev Base 1C",
+          "icon": "media/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "initDevBase1c": [
+        {
+          "id": "initDevBase1c.view",
+          "name": "Init Dev Base",
+          "type": "webview"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Init Dev Base 1C",
+      "properties": {
+        "initDevBase1c.basesPath": {
+          "type": "string",
+          "default": "C:\\info_bases",
+          "description": "Путь к каталогу с информационными базами"
+        },
+        "initDevBase1c.srcCf": {
+          "type": "string",
+          "default": "src\\cf",
+          "description": "Путь к конфигурации 1С внутри проекта"
+        },
+        "initDevBase1c.v8version": {
+          "type": "string",
+          "default": "8.3.24.1667",
+          "description": "Версия платформы 1С для vrunner"
+        },
+        "initDevBase1c.extensionPath": {
+          "type": "string",
+          "default": "C:\\git\\src\\cfe",
+          "description": "Путь к расширению для подключения к ИБ"
+        }
+      }
+    },
     "commands": [
       {
         "command": "init-dev-base-1c.helloWorld",
         "title": "Hello World"
+      },
+      {
+        "command": "init-dev-base-1c.createBase",
+        "title": "1C: Создать ИБ из текущей ветки проекта"
+      },
+      {
+        "command": "init-dev-base-1c.connectExtension",
+        "title": "1C: Подключить расширение к ИБ текущей ветки"
       }
     ]
   },

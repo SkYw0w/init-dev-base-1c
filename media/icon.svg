@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <!-- Простой темный фон -->
+  <rect width="128" height="128" fill="#2D2D30" rx="16"/>
+  
+  <!-- Простая база данных - три горизонтальные линии -->
+  <rect x="20" y="40" width="88" height="8" fill="#007ACC" rx="4"/>
+  <rect x="20" y="56" width="88" height="8" fill="#007ACC" rx="4"/>
+  <rect x="20" y="72" width="88" height="8" fill="#007ACC" rx="4"/>
+  
+  <!-- Соединения справа -->
+  <rect x="108" y="48" width="12" height="4" fill="#007ACC"/>
+  <rect x="108" y="60" width="12" height="4" fill="#007ACC"/>
+  <rect x="108" y="72" width="12" height="4" fill="#007ACC"/>
+</svg>
