@@ -1,5 +1,3 @@
-// The module 'vscode' contains the VS Code extensibility API
-// Import the module and reference it with the alias vscode in your code below
 import * as vscode from 'vscode';
 import { exec } from 'child_process';
 import * as path from 'path';
@@ -12,9 +10,6 @@ interface GitExtension {
     activate?: () => Promise<void>;
 }
 
-// This method is called when your extension is activated
-// Your extension is activated the very first time the command is executed
-// Функция для получения активного Git репозитория
 async function getActiveGitRepository(): Promise<any | null> {
     const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git');
 
@@ -22,7 +17,6 @@ async function getActiveGitRepository(): Promise<any | null> {
         return null;
     }
 
-    // Убедимся, что Git-расширение активировано
     if (!gitExtension.isActive && gitExtension.activate) {
         try {
             await gitExtension.activate();
@@ -37,7 +31,6 @@ async function getActiveGitRepository(): Promise<any | null> {
         return null;
     }
 
-    // 1) Пытаемся определить по активному редактору
     const activeEditor = vscode.window.activeTextEditor;
     if (activeEditor) {
         const uri = activeEditor.document.uri;
@@ -47,26 +40,21 @@ async function getActiveGitRepository(): Promise<any | null> {
         }
     }
 
-    // 2) Если в workspace один репозиторий — возвращаем его
     if (git.repositories.length === 1) {
         return git.repositories[0];
     }
 
-    // 3) Предлагаем выбрать репозиторий вручную
     const items: Array<{ label: string; repository: any }> = git.repositories.map((r: any) => ({ label: r.rootUri.fsPath, repository: r }));
     const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Выберите Git репозиторий' });
     return pick?.repository ?? null;
 }
 
-// Функция для определения активного workspace folder с использованием Git API
 async function getActiveWorkspaceFolder(): Promise<string | undefined> {
-    // Сначала пытаемся использовать Git API
     const activeRepo = await getActiveGitRepository();
     if (activeRepo) {
         return activeRepo.rootUri.fsPath;
     }
     
-    // Fallback на старую логику, если Git API недоступен
     if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
         return undefined;
     }
@@ -75,7 +63,6 @@ async function getActiveWorkspaceFolder(): Promise<string | undefined> {
         return vscode.workspace.workspaceFolders[0].uri.fsPath;
     }
     
-    // Если несколько папок, пытаемся определить активную по открытому файлу
     const activeEditor = vscode.window.activeTextEditor;
     if (activeEditor) {
         const activeFileUri = activeEditor.document.uri;
@@ -85,7 +72,6 @@ async function getActiveWorkspaceFolder(): Promise<string | undefined> {
         }
     }
     
-    // Если не удалось определить по активному файлу, показываем выбор
     const folderNames = vscode.workspace.workspaceFolders.map(folder => ({
         label: folder.name,
         description: folder.uri.fsPath,
@@ -102,16 +88,9 @@ async function getActiveWorkspaceFolder(): Promise<string | undefined> {
 
 export function activate(context: vscode.ExtensionContext) {
 
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "init-dev-base-1c" is now active!');
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with registerCommand
-	// The commandId parameter must match the command field in package.json
     const disposable = vscode.commands.registerCommand('init-dev-base-1c.helloWorld', () => {
-		// The code you place here will be executed every time your command is executed
-		// Display a message box to the user
 		vscode.window.showInformationMessage('Hello World from init_dev_base_1C!');
 	});
 
@@ -124,7 +103,6 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
-        // Получаем информацию о Git репозитории для отображения
         const activeRepo = await getActiveGitRepository();
         const branchName = activeRepo?.state?.HEAD?.name || 'unknown';
         const repoName = path.basename(workspaceFolder);
@@ -147,7 +125,6 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
-        // Показываем информацию о выбранном репозитории
         vscode.window.showInformationMessage(
             `Создание ИБ из репозитория: ${repoName}, ветка: ${branchName}`
         );
@@ -155,7 +132,6 @@ export function activate(context: vscode.ExtensionContext) {
         const terminal = vscode.window.createTerminal({ name: 'Init Dev Base 1C' });
         const scriptPath = context.asAbsolutePath(path.join('scripts', 'init_dev_base.ps1'));
 
-        // Вызываем внешний скрипт .ps1, передавая параметры
         const arg = (label: string, value: string) => ` -${label} '${value.replace(/'/g, "''")}'`;
         const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"` +
             arg('projectPath', workspaceFolder) +
@@ -176,7 +152,6 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
-        // Получаем информацию о Git репозитории для отображения
         const activeRepo = await getActiveGitRepository();
         const branchName = activeRepo?.state?.HEAD?.name || 'unknown';
         const repoName = path.basename(workspaceFolder);
@@ -211,7 +186,6 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
-        // Показываем информацию о выбранном репозитории
         vscode.window.showInformationMessage(
             `Подключение расширения к ИБ репозитория: ${repoName}, ветка: ${branchName}`
         );
@@ -219,7 +193,6 @@ export function activate(context: vscode.ExtensionContext) {
         const terminal = vscode.window.createTerminal({ name: 'Connect Extension 1C' });
         const scriptPath = context.asAbsolutePath(path.join('scripts', 'connect_extension.ps1'));
 
-        // Вызываем отдельный скрипт для подключения расширения
         const arg = (label: string, value: string) => ` -${label} '${value.replace(/'/g, "''")}'`;
         const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"` +
             arg('projectPath', workspaceFolder) +
@@ -233,7 +206,6 @@ export function activate(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(connectExtensionCmd);
 
-    // Регистрация webview view провайдера для боковой панели
     const provider: vscode.WebviewViewProvider = {
         resolveWebviewView(webviewView: vscode.WebviewView) {
             webviewView.webview.options = { enableScripts: true };

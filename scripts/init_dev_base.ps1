@@ -8,10 +8,10 @@ Param(
 $ErrorActionPreference = 'Stop'
 
 if (-not $projectPath -or -not (Test-Path $projectPath)) {
-    throw "Некорректный projectPath: '$projectPath'"
+    throw "Invalid projectPath: '$projectPath'"
 }
 if (-not $basesPath) {
-    throw "Не указан basesPath"
+    throw "Not specified basesPath"
 }
 
 Push-Location $projectPath
@@ -30,29 +30,24 @@ New-Item -ItemType Directory -Force -Path $ib_dir | Out-Null
 
 $worktreeDir = Join-Path (Split-Path $projectPath) $ib_name
 
-# Создаем worktree
+git worktree prune | Out-Null
+
 git worktree add -b $ib_name $worktreeDir
 
-# Проверяем, что worktree создался
 if (-not (Test-Path $worktreeDir)) {
-    throw "Не удалось создать worktree: '$worktreeDir'"
+    throw "Failed to create worktree: '$worktreeDir'"
 }
 
-# Временно скрываем изменения в worktree от Git
 Push-Location $worktreeDir
 try {
-    # Помечаем все файлы в worktree как skip-worktree
-    # Это скроет изменения от Git в основной рабочей директории
     git update-index --skip-worktree .
     
-    # Выполняем инициализацию ИБ
     vrunner init-dev --src $src_cf_path --ibcmd --ibconnection "/F$ib_dir" --v8version $v8version
     vrunner updatedb --ibconnection "/F$ib_dir" --ibcmd --v8version $v8version
 }
 finally {
     Pop-Location
     
-    # Восстанавливаем отслеживание файлов перед удалением worktree
     Push-Location $worktreeDir
     try {
         git update-index --no-skip-worktree .
@@ -61,6 +56,6 @@ finally {
         Pop-Location
     }
     
-    # Удаляем worktree
-    git worktree remove $worktreeDir
+    git worktree remove --force $worktreeDir
+    git worktree prune | Out-Null
 }
