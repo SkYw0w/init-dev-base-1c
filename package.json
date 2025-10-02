@@ -2,7 +2,7 @@
   "name": "init-dev-base-1c",
   "displayName": "init_dev_base_1C",
   "description": "Создание информационной базы 1С из текущего Git проекта",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "engines": {
     "vscode": "^1.70.0"
   },
