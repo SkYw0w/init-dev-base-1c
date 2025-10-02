@@ -50,7 +50,6 @@ try {
     git update-index --skip-worktree .
     
     vrunner init-dev --src $src_cf_path --ibcmd --ibconnection "/F$ib_dir" --v8version $v8version
-    vrunner updatedb --ibconnection "/F$ib_dir" --ibcmd --v8version $v8version
 }
 finally {
     Pop-Location
