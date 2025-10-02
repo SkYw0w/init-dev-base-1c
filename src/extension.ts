@@ -6,8 +6,100 @@ import * as path from 'path';
 import * as util from 'util';
 const execAsync = util.promisify(exec);
 
+interface GitExtension {
+    getAPI(version: number): any;
+    isActive?: boolean;
+    activate?: () => Promise<void>;
+}
+
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
+// Функция для получения активного Git репозитория
+async function getActiveGitRepository(): Promise<any | null> {
+    const gitExtension = vscode.extensions.getExtension<GitExtension>('vscode.git');
+
+    if (!gitExtension) {
+        return null;
+    }
+
+    // Убедимся, что Git-расширение активировано
+    if (!gitExtension.isActive && gitExtension.activate) {
+        try {
+            await gitExtension.activate();
+        } catch {
+            // ignore
+        }
+    }
+
+    const git = gitExtension.exports?.getAPI?.(1);
+
+    if (!git || !git.repositories || git.repositories.length === 0) {
+        return null;
+    }
+
+    // 1) Пытаемся определить по активному редактору
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+        const uri = activeEditor.document.uri;
+        const repoByEditor = git.getRepository?.(uri);
+        if (repoByEditor) {
+            return repoByEditor;
+        }
+    }
+
+    // 2) Если в workspace один репозиторий — возвращаем его
+    if (git.repositories.length === 1) {
+        return git.repositories[0];
+    }
+
+    // 3) Предлагаем выбрать репозиторий вручную
+    const items: Array<{ label: string; repository: any }> = git.repositories.map((r: any) => ({ label: r.rootUri.fsPath, repository: r }));
+    const pick = await vscode.window.showQuickPick(items, { placeHolder: 'Выберите Git репозиторий' });
+    return pick?.repository ?? null;
+}
+
+// Функция для определения активного workspace folder с использованием Git API
+async function getActiveWorkspaceFolder(): Promise<string | undefined> {
+    // Сначала пытаемся использовать Git API
+    const activeRepo = await getActiveGitRepository();
+    if (activeRepo) {
+        return activeRepo.rootUri.fsPath;
+    }
+    
+    // Fallback на старую логику, если Git API недоступен
+    if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length === 0) {
+        return undefined;
+    }
+    
+    if (vscode.workspace.workspaceFolders.length === 1) {
+        return vscode.workspace.workspaceFolders[0].uri.fsPath;
+    }
+    
+    // Если несколько папок, пытаемся определить активную по открытому файлу
+    const activeEditor = vscode.window.activeTextEditor;
+    if (activeEditor) {
+        const activeFileUri = activeEditor.document.uri;
+        const activeWorkspaceFolder = vscode.workspace.getWorkspaceFolder(activeFileUri);
+        if (activeWorkspaceFolder) {
+            return activeWorkspaceFolder.uri.fsPath;
+        }
+    }
+    
+    // Если не удалось определить по активному файлу, показываем выбор
+    const folderNames = vscode.workspace.workspaceFolders.map(folder => ({
+        label: folder.name,
+        description: folder.uri.fsPath,
+        folder: folder
+    }));
+    
+    const selectedFolder = await vscode.window.showQuickPick(folderNames, {
+        placeHolder: 'Выберите репозиторий',
+        title: 'Выбор репозитория'
+    });
+    
+    return selectedFolder?.folder.uri.fsPath;
+}
+
 export function activate(context: vscode.ExtensionContext) {
 
 	// Use the console to output diagnostic information (console.log) and errors (console.error)
@@ -26,11 +118,16 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposable);
 
     const createBaseCmd = vscode.commands.registerCommand('init-dev-base-1c.createBase', async () => {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const workspaceFolder = await getActiveWorkspaceFolder();
         if (!workspaceFolder) {
             vscode.window.showErrorMessage('Рабочая папка не открыта. Откройте папку репозитория.');
             return;
         }
+
+        // Получаем информацию о Git репозитории для отображения
+        const activeRepo = await getActiveGitRepository();
+        const branchName = activeRepo?.state?.HEAD?.name || 'unknown';
+        const repoName = path.basename(workspaceFolder);
 
         const config = vscode.workspace.getConfiguration();
         const basesPath = config.get<string>('initDevBase1c.basesPath') || '';
@@ -50,6 +147,11 @@ export function activate(context: vscode.ExtensionContext) {
             return;
         }
 
+        // Показываем информацию о выбранном репозитории
+        vscode.window.showInformationMessage(
+            `Создание ИБ из репозитория: ${repoName}, ветка: ${branchName}`
+        );
+
         const terminal = vscode.window.createTerminal({ name: 'Init Dev Base 1C' });
         const scriptPath = context.asAbsolutePath(path.join('scripts', 'init_dev_base.ps1'));
 
@@ -68,11 +170,16 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(createBaseCmd);
 
     const connectExtensionCmd = vscode.commands.registerCommand('init-dev-base-1c.connectExtension', async () => {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+        const workspaceFolder = await getActiveWorkspaceFolder();
         if (!workspaceFolder) {
             vscode.window.showErrorMessage('Рабочая папка не открыта. Откройте папку репозитория.');
             return;
         }
+
+        // Получаем информацию о Git репозитории для отображения
+        const activeRepo = await getActiveGitRepository();
+        const branchName = activeRepo?.state?.HEAD?.name || 'unknown';
+        const repoName = path.basename(workspaceFolder);
 
         const config = vscode.workspace.getConfiguration();
         const basesPath = config.get<string>('initDevBase1c.basesPath') || '';
@@ -103,6 +210,11 @@ export function activate(context: vscode.ExtensionContext) {
             }
             return;
         }
+
+        // Показываем информацию о выбранном репозитории
+        vscode.window.showInformationMessage(
+            `Подключение расширения к ИБ репозитория: ${repoName}, ветка: ${branchName}`
+        );
 
         const terminal = vscode.window.createTerminal({ name: 'Connect Extension 1C' });
         const scriptPath = context.asAbsolutePath(path.join('scripts', 'connect_extension.ps1'));
