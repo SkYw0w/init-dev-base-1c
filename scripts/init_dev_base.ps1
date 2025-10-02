@@ -38,7 +38,8 @@ if ($LASTEXITCODE -eq 0) {
     git branch -D $ib_name | Out-Null
 }
 
-git worktree add -b $ib_name $worktreeDir
+# Создаем worktree на текущем HEAD без новой ветки
+git worktree add --detach $worktreeDir
 
 if (-not (Test-Path $worktreeDir)) {
     throw "Failed to create worktree: '$worktreeDir'"
