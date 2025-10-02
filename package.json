@@ -29,8 +29,9 @@
       "initDevBase1c": [
         {
           "id": "initDevBase1c.view",
-          "name": "Init Dev Base",
-          "type": "webview"
+          "name": "Basic commands",
+          "type": "webview",
+          "icon": "media/icon.png"
         }
       ]
     },
