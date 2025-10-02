@@ -30,8 +30,18 @@ New-Item -ItemType Directory -Force -Path $ib_dir | Out-Null
 
 $worktreeDir = Join-Path (Split-Path $projectPath) $ib_name
 
-
+# Создаем worktree
 git worktree add -b $ib_name $worktreeDir
+
+# Скрываем изменения worktree в git панели
+Push-Location $projectPath
+try {
+    git update-index --skip-worktree $worktreeDir
+}
+finally {
+    Pop-Location
+}
+
 Push-Location $worktreeDir
 try {
     vrunner init-dev --src $src_cf_path --ibcmd --ibconnection "/F$ib_dir" --v8version $v8version
@@ -39,5 +49,16 @@ try {
 }
 finally {
     Pop-Location
+    
+    # Восстанавливаем отслеживание изменений
+    Push-Location $projectPath
+    try {
+        git update-index --no-skip-worktree $worktreeDir
+    }
+    finally {
+        Pop-Location
+    }
+    
+    # Удаляем worktree
     git worktree remove $worktreeDir
 }

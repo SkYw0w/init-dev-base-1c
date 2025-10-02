@@ -26,9 +26,50 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(disposable);
 
     const createBaseCmd = vscode.commands.registerCommand('init-dev-base-1c.createBase', async () => {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-        if (!workspaceFolder) {
-            vscode.window.showErrorMessage('Рабочая папка не открыта. Откройте папку репозитория.');
+        // Определяем активный проект через git
+        let projectPath: string | undefined;
+        
+        try {
+            // Сначала пробуем определить git репозиторий для активного файла
+            const activeFile = vscode.window.activeTextEditor?.document.uri.fsPath;
+            if (activeFile) {
+                const { stdout } = await execAsync('git rev-parse --show-toplevel', { cwd: path.dirname(activeFile) });
+                projectPath = stdout.trim();
+            } else {
+                // Если нет активного файла, пробуем найти git репозиторий в workspace
+                if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+                    // Проверяем каждый workspace на наличие git репозитория
+                    for (const folder of vscode.workspace.workspaceFolders) {
+                        try {
+                            const { stdout } = await execAsync('git rev-parse --show-toplevel', { cwd: folder.uri.fsPath });
+                            const gitRoot = stdout.trim();
+                            // Проверяем, что это действительно корень репозитория
+                            if (gitRoot === folder.uri.fsPath) {
+                                projectPath = gitRoot;
+                                break;
+                            }
+                        } catch (error) {
+                            // Продолжаем поиск в следующем workspace
+                            continue;
+                        }
+                    }
+                    
+                    // Если не нашли git репозиторий, используем первый workspace
+                    if (!projectPath) {
+                        projectPath = vscode.workspace.workspaceFolders[0].uri.fsPath;
+                    }
+                } else {
+                    vscode.window.showErrorMessage('Рабочая папка не открыта. Откройте папку репозитория.');
+                    return;
+                }
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage('Не удалось определить git репозиторий. Убедитесь, что проект находится в git репозитории.');
+            return;
+        }
+        
+        if (!projectPath) {
+            vscode.window.showErrorMessage('Не удалось определить проект.');
             return;
         }
 
@@ -56,7 +97,7 @@ export function activate(context: vscode.ExtensionContext) {
         // Вызываем внешний скрипт .ps1, передавая параметры
         const arg = (label: string, value: string) => ` -${label} '${value.replace(/'/g, "''")}'`;
         const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"` +
-            arg('projectPath', workspaceFolder) +
+            arg('projectPath', projectPath) +
             arg('basesPath', basesPath) +
             arg('src_cf', srcCf) +
             arg('v8version', v8version);
@@ -68,9 +109,50 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(createBaseCmd);
 
     const connectExtensionCmd = vscode.commands.registerCommand('init-dev-base-1c.connectExtension', async () => {
-        const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-        if (!workspaceFolder) {
-            vscode.window.showErrorMessage('Рабочая папка не открыта. Откройте папку репозитория.');
+        // Определяем активный проект через git
+        let projectPath: string | undefined;
+        
+        try {
+            // Сначала пробуем определить git репозиторий для активного файла
+            const activeFile = vscode.window.activeTextEditor?.document.uri.fsPath;
+            if (activeFile) {
+                const { stdout } = await execAsync('git rev-parse --show-toplevel', { cwd: path.dirname(activeFile) });
+                projectPath = stdout.trim();
+            } else {
+                // Если нет активного файла, пробуем найти git репозиторий в workspace
+                if (vscode.workspace.workspaceFolders && vscode.workspace.workspaceFolders.length > 0) {
+                    // Проверяем каждый workspace на наличие git репозитория
+                    for (const folder of vscode.workspace.workspaceFolders) {
+                        try {
+                            const { stdout } = await execAsync('git rev-parse --show-toplevel', { cwd: folder.uri.fsPath });
+                            const gitRoot = stdout.trim();
+                            // Проверяем, что это действительно корень репозитория
+                            if (gitRoot === folder.uri.fsPath) {
+                                projectPath = gitRoot;
+                                break;
+                            }
+                        } catch (error) {
+                            // Продолжаем поиск в следующем workspace
+                            continue;
+                        }
+                    }
+                    
+                    // Если не нашли git репозиторий, используем первый workspace
+                    if (!projectPath) {
+                        projectPath = vscode.workspace.workspaceFolders[0].uri.fsPath;
+                    }
+                } else {
+                    vscode.window.showErrorMessage('Рабочая папка не открыта. Откройте папку репозитория.');
+                    return;
+                }
+            }
+        } catch (error) {
+            vscode.window.showErrorMessage('Не удалось определить git репозиторий. Убедитесь, что проект находится в git репозитории.');
+            return;
+        }
+        
+        if (!projectPath) {
+            vscode.window.showErrorMessage('Не удалось определить проект.');
             return;
         }
 
@@ -110,7 +192,7 @@ export function activate(context: vscode.ExtensionContext) {
         // Вызываем отдельный скрипт для подключения расширения
         const arg = (label: string, value: string) => ` -${label} '${value.replace(/'/g, "''")}'`;
         const cmd = `powershell -NoProfile -ExecutionPolicy Bypass -File "${scriptPath}"` +
-            arg('projectPath', workspaceFolder) +
+            arg('projectPath', projectPath) +
             arg('basesPath', basesPath) +
             arg('extensionPath', extensionPath) +
             arg('v8version', v8version);
