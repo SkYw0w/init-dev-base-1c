@@ -32,6 +32,12 @@ $worktreeDir = Join-Path (Split-Path $projectPath) $ib_name
 
 git worktree prune | Out-Null
 
+# Если ветка с таким именем уже существует — удалим, чтобы избежать конфликта при добавлении worktree
+git rev-parse --verify --quiet $ib_name 2>$null | Out-Null
+if ($LASTEXITCODE -eq 0) {
+    git branch -D $ib_name | Out-Null
+}
+
 git worktree add -b $ib_name $worktreeDir
 
 if (-not (Test-Path $worktreeDir)) {
