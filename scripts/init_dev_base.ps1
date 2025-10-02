@@ -28,7 +28,12 @@ finally {
 $ib_dir = Join-Path $basesPath $ib_name
 New-Item -ItemType Directory -Force -Path $ib_dir | Out-Null
 
-$worktreeDir = Join-Path (Split-Path $projectPath) $ib_name
+$tempRoot = [System.IO.Path]::GetTempPath()
+$worktreeDir = Join-Path $tempRoot $ib_name
+
+if (Test-Path $worktreeDir) {
+    try { Remove-Item -LiteralPath $worktreeDir -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+}
 
 Push-Location $projectPath
 try {
@@ -68,8 +73,11 @@ finally {
     
     Push-Location $projectPath
     try {
-        git worktree remove --force $worktreeDir
-        git worktree prune | Out-Null
+    git worktree remove --force $worktreeDir
+    git worktree prune | Out-Null
+    if (Test-Path $worktreeDir) {
+        try { Remove-Item -LiteralPath $worktreeDir -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+    }
     }
     finally {
         Pop-Location
