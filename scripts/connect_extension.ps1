@@ -25,7 +25,7 @@ try {
     $ib_dir = Join-Path $basesPath $ib_name
     
     if (-not (Test-Path $ib_dir)) {
-        throw "Информационная база не найдена: '$ib_dir'"
+        throw "Information base not found: '$ib_dir'"
     }
     
     vrunner compileext "$extensionPath" "Test" --ibconnection "/F$ib_dir" --updatedb --ibcmd --v8version $v8version
